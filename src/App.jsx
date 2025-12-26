@@ -5,7 +5,6 @@ import {
   Upload, 
   Plus, 
   Trash2, 
-  FileText, 
   AlertCircle,
   Copy,
   ChevronRight,
@@ -18,7 +17,8 @@ import {
   Zap,
   SortAsc,
   GripVertical,
-  Globe
+  Globe,
+  Info
 } from 'lucide-react';
 
 // DND Kit Imports
@@ -42,7 +42,7 @@ import { CSS } from '@dnd-kit/utilities';
 const COMMON_SQUEEZES = ['1.25', '1.3', '1.33', '1.5', '1.6', '1.65', '1.66', '1.8', '2.0'];
 
 const INITIAL_MODE = {
-  id: '', // Added for DND unique identification
+  id: '', 
   Mode: 'New Mode',
   Width: '0.00',
   Height: '0.00',
@@ -52,6 +52,47 @@ const INITIAL_MODE = {
 };
 
 // --- Sub-components ---
+
+const SimpleTooltip = ({ text, children }) => {
+  return (
+    <div className="group/tooltip relative flex items-center">
+      {children}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-800 text-zinc-200 text-[10px] rounded shadow-xl whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700">
+        {text}
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-zinc-800"></div>
+      </div>
+    </div>
+  );
+};
+
+const ActionButton = ({ onClick, icon: Icon, label, description, primary = false, disabled = false, component = 'button', ...props }) => {
+  const baseClass = `flex items-center gap-2 px-4 py-2 rounded transition-all text-sm font-bold uppercase tracking-widest shadow-lg ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
+  const styleClass = primary 
+    ? 'bg-atlas-gold text-zinc-950 hover:bg-atlas-gold/90 ring-2 ring-atlas-gold/20 ring-offset-2 ring-offset-zinc-950' 
+    : 'bg-zinc-900 border border-zinc-800 hover:border-atlas-gold/50 hover:text-atlas-gold text-zinc-300';
+
+  const content = (
+    <>
+      <Icon size={16} />
+      <span>{label}</span>
+    </>
+  );
+
+  return (
+    <SimpleTooltip text={description}>
+      {component === 'label' ? (
+        <label className={`${baseClass} ${styleClass}`} {...props}>
+          {content}
+          {props.children}
+        </label>
+      ) : (
+        <button onClick={onClick} disabled={disabled} className={`${baseClass} ${styleClass}`} {...props}>
+          {content}
+        </button>
+      )}
+    </SimpleTooltip>
+  );
+};
 
 const SqueezeSelector = ({ value, onChange }) => {
   const [customValue, setCustomValue] = useState('');
@@ -78,7 +119,7 @@ const SqueezeSelector = ({ value, onChange }) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-1 items-center min-w-[180px]">
+    <div className="flex flex-wrap gap-1 items-center min-w-[140px] md:min-w-[180px]">
       {currentSqueezes.map(s => (
         <button 
           key={s}
@@ -141,9 +182,10 @@ const SortableRow = ({ mode, bIdx, mIdx, modeIdx, updateMode, updateResolution, 
     <tr 
       ref={setNodeRef} 
       style={style} 
-      className={`group/row transition-colors ${isDragging ? 'bg-atlas-gold/10 shadow-2xl ring-1 ring-atlas-gold/20' : 'hover:bg-atlas-gold/5'}`}
+      className={`group/row transition-colors flex flex-col md:table-row w-full border-b border-zinc-800/50 md:border-b-0 mb-4 md:mb-0 pb-4 md:pb-0 ${isDragging ? 'bg-atlas-gold/10 shadow-2xl ring-1 ring-atlas-gold/20' : 'hover:bg-atlas-gold/5'}`}
     >
-      <td className="p-2 pl-4 w-8">
+      {/* Mobile Grip & Actions Header */}
+      <td className="p-2 md:pl-4 md:w-8 flex items-center justify-between md:table-cell bg-zinc-900/50 md:bg-transparent">
         <button 
           {...attributes} 
           {...listeners} 
@@ -152,13 +194,31 @@ const SortableRow = ({ mode, bIdx, mIdx, modeIdx, updateMode, updateResolution, 
         >
           <GripVertical size={14} />
         </button>
+        <div className="md:hidden flex gap-2">
+           <button onClick={() => duplicateMode(bIdx, mIdx, modeIdx)} className="text-zinc-600 hover:text-atlas-gold"><Copy size={14}/></button>
+           <button onClick={() => removeMode(bIdx, mIdx, modeIdx)} className="text-zinc-700 hover:text-red-500"><Trash2 size={14}/></button>
+        </div>
       </td>
-      <td className="p-2"><input value={mode.Mode} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Mode', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-xs outline-none" /></td>
-      <td className="p-2 w-20"><input type="text" inputMode="decimal" value={mode.Width} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Width', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-xs outline-none font-mono text-center" /></td>
-      <td className="p-2 w-20"><input type="text" inputMode="decimal" value={mode.Height} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Height', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-xs outline-none font-mono text-center" /></td>
+
+      {/* Inputs */}
+      <td className="p-2 md:w-auto">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600 block mb-1">Mode Name</label>
+        <input value={mode.Mode} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Mode', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-sm md:text-xs outline-none font-medium" placeholder="Mode Name" />
+      </td>
       
-      <td className="p-2 w-40">
-        <div className="flex items-center justify-center gap-1 font-mono text-xs text-zinc-500">
+      <td className="p-2 md:w-20 flex md:table-cell flex-col">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600 block mb-1">Width (mm)</label>
+        <input type="text" inputMode="decimal" value={mode.Width} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Width', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-sm md:text-xs outline-none font-mono md:text-center text-zinc-300" />
+      </td>
+      
+      <td className="p-2 md:w-20 flex md:table-cell flex-col">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600 block mb-1">Height (mm)</label>
+        <input type="text" inputMode="decimal" value={mode.Height} onChange={e => updateMode(bIdx, mIdx, modeIdx, 'Height', e.target.value)} className="w-full bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-sm md:text-xs outline-none font-mono md:text-center text-zinc-300" />
+      </td>
+      
+      <td className="p-2 md:w-40 flex md:table-cell flex-col">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600 block mb-1">Resolution</label>
+        <div className="flex items-center md:justify-center gap-1 font-mono text-xs text-zinc-500">
           <input 
             value={resParts[0]} 
             onChange={e => updateResolution(bIdx, mIdx, modeIdx, 'w', e.target.value)}
@@ -173,21 +233,25 @@ const SortableRow = ({ mode, bIdx, mIdx, modeIdx, updateMode, updateResolution, 
         </div>
       </td>
 
-      <td className="p-2 text-center">
+      <td className="p-2 md:text-center flex items-center md:table-cell gap-2 md:gap-0">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600">Native Anamorphic</label>
         <input 
           type="checkbox"
           checked={mode.NativeAnamorphic === 'True'}
           onChange={e => updateMode(bIdx, mIdx, modeIdx, 'NativeAnamorphic', e.target.checked ? 'True' : 'False')}
-          className="accent-atlas-gold w-3 h-3 bg-zinc-950 border-zinc-800 rounded cursor-pointer"
+          className="accent-atlas-gold w-4 h-4 md:w-3 md:h-3 bg-zinc-950 border-zinc-800 rounded cursor-pointer"
         />
       </td>
-      <td className="p-2 overflow-visible relative">
+      
+      <td className="p-2 overflow-visible relative flex md:table-cell flex-col">
+        <label className="md:hidden text-[9px] uppercase tracking-widest text-zinc-600 block mb-1">Squeezes</label>
         <SqueezeSelector 
           value={mode.SupportedSqueezes} 
           onChange={(newVal) => updateMode(bIdx, mIdx, modeIdx, 'SupportedSqueezes', newVal)} 
         />
       </td>
-      <td className="p-2 text-right pr-6">
+      
+      <td className="p-2 text-right pr-6 hidden md:table-cell">
         <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-all">
           <button onClick={() => duplicateMode(bIdx, mIdx, modeIdx)} className="text-zinc-600 hover:text-atlas-gold transition-colors" title="Duplicate Mode"><Copy size={12}/></button>
           <button onClick={() => removeMode(bIdx, mIdx, modeIdx)} className="text-zinc-700 hover:text-red-500 transition-colors" title="Delete Mode"><Trash2 size={12}/></button>
@@ -240,7 +304,7 @@ export default function App() {
       if (!brands[bName][mName]) brands[bName][mName] = [];
       
       brands[bName][mName].push({
-        id: generateId(), // Essential for DND
+        id: generateId(), 
         Mode: row.Mode,
         Width: row.Width,
         Height: row.Height,
@@ -264,7 +328,7 @@ export default function App() {
     groupedData.forEach(b => {
       b.models.forEach(m => {
         m.modes.forEach(mode => {
-          const { id, ...modeData } = mode; // Strip ID for CSV
+          const { id, ...modeData } = mode; 
           flat.push({
             Brand: b.brand,
             Model: m.name,
@@ -356,7 +420,7 @@ export default function App() {
     const newData = [...groupedData];
     const modeToDuplicate = { 
       ...newData[brandIdx].models[modelIdx].modes[modeIdx],
-      id: generateId() // New ID for duplicate
+      id: generateId() 
     };
     newData[brandIdx].models[modelIdx].modes.splice(modeIdx + 1, 0, modeToDuplicate);
     setGroupedData(newData);
@@ -465,12 +529,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans p-8 tracking-tight">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans p-4 md:p-8 tracking-tight">
       <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-light text-atlas-gold mb-2 italic tracking-wider uppercase text-shadow-glow">Vision Tool <span className="font-bold not-italic">Data Editor</span></h1>
+          <h1 className="text-2xl md:text-3xl font-light text-atlas-gold mb-2 italic tracking-wider uppercase text-shadow-glow">Vision Tool <span className="font-bold not-italic">Data Editor</span></h1>
           <div className="flex items-center gap-3">
-            <p className="text-zinc-500 text-sm tracking-wide uppercase font-medium">Hierarchical Camera & Sensor Management</p>
+            <p className="text-zinc-500 text-xs md:text-sm tracking-wide uppercase font-medium">Hierarchical Camera & Sensor Management</p>
             {hasUnsavedChanges && (
               <span className="flex items-center gap-1.5 px-2 py-0.5 bg-atlas-gold/10 border border-atlas-gold/20 text-atlas-gold text-[10px] font-bold uppercase tracking-widest rounded-full animate-pulse">
                 <Circle size={8} fill="currentColor" /> Unsaved Changes
@@ -480,28 +544,15 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleLoadDefault}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-colors cursor-pointer text-sm uppercase tracking-widest font-bold shadow-lg"
-          >
-            <Globe size={16} />
-            <span>Load Default</span>
-          </button>
-
-          <label className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded hover:border-zinc-600 transition-colors cursor-pointer text-sm uppercase tracking-widest font-bold shadow-lg">
-            <Upload size={16} />
-            <span>Load Database</span>
-            <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-          </label>
-          
-          <button 
-            onClick={exportCSV}
-            disabled={groupedData.length === 0}
-            className={`flex items-center gap-2 px-4 py-2 rounded transition-all text-sm font-bold uppercase tracking-widest shadow-lg ${hasUnsavedChanges ? 'bg-atlas-gold text-zinc-950 hover:bg-atlas-gold/90 ring-2 ring-atlas-gold/20 ring-offset-2 ring-offset-zinc-950' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700'}`}
-          >
-            <Download size={16} />
-            <span>Save Database</span>
-          </button>
+          {/* Only show Save button here when data is active. Load buttons live in empty state. */}
+          <ActionButton 
+            onClick={exportCSV} 
+            icon={Download} 
+            label="Save Database" 
+            description="Download your changes as a .csv file."
+            primary 
+            disabled={groupedData.length === 0} 
+          />
         </div>
       </header>
 
@@ -539,15 +590,15 @@ export default function App() {
                       className="bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-lg font-bold text-atlas-gold outline-none w-48 transition-all"
                     />
                   </div>
-                  <span className="text-xs text-zinc-600 font-mono">({brand.models.length} Models)</span>
+                  <span className="text-xs text-zinc-600 font-mono hidden md:inline">({brand.models.length} Models)</span>
                 </div>
-                <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.stopPropagation(); removeBrand(bIdx); }} className="text-zinc-600 hover:text-red-500 transition-colors" title="Delete Brand Group"><Trash2 size={16}/></button>
                 </div>
               </div>
 
               {expandedBrands[brand.brand] && (
-                <div className="p-4 space-y-4 bg-black/20 font-sans text-sm">
+                <div className="p-2 md:p-4 space-y-4 bg-black/20 font-sans text-sm">
                   <button 
                     onClick={() => addModel(bIdx)}
                     className="w-full py-3 border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 rounded transition-all text-[10px] font-bold uppercase tracking-widest bg-zinc-900/30"
@@ -570,11 +621,11 @@ export default function App() {
                               <input 
                                 value={model.name} 
                                 onChange={e => updateModelName(bIdx, mIdx, e.target.value)}
-                                className="bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-sm font-semibold text-zinc-200 outline-none w-64 transition-all"
+                                className="bg-transparent border-none focus:ring-1 focus:ring-atlas-gold rounded px-2 py-1 text-sm font-semibold text-zinc-200 outline-none w-48 md:w-64 transition-all"
                               />
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 opacity-0 group-hover/model:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover/model:opacity-100 transition-opacity">
                             <button onClick={(e) => { e.stopPropagation(); removeModel(bIdx, mIdx); }} className="text-zinc-700 hover:text-red-500 transition-colors" title="Delete Model"><Trash2 size={14}/></button>
                           </div>
                         </div>
@@ -586,10 +637,10 @@ export default function App() {
                               collisionDetection={closestCenter}
                               onDragEnd={(event) => handleDragEnd(event, bIdx, mIdx)}
                             >
-                              <table className="w-full text-left border-collapse table-fixed">
-                                <thead>
+                              <table className="w-full text-left border-collapse table-auto md:table-fixed block md:table">
+                                <thead className="hidden md:table-header-group">
                                   <tr className="bg-black/40 text-[9px] uppercase tracking-widest text-zinc-600">
-                                    <th className="p-3 w-8"></th> {/* Handle Spacer */}
+                                    <th className="p-3 w-8"></th> 
                                     <th className="p-3 font-bold w-1/4">
                                       <div className="flex items-center gap-2">
                                         <span>Mode Name</span>
@@ -632,7 +683,7 @@ export default function App() {
                                     <th className="p-3 w-20 text-right pr-6 text-center">Actions</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-800/50 font-sans">
+                                <tbody className="divide-y divide-zinc-800/50 font-sans block md:table-row-group">
                                   <SortableContext 
                                     items={model.modes.map(m => m.id)}
                                     strategy={verticalListSortingStrategy}
@@ -671,23 +722,25 @@ export default function App() {
           ))}
 
           {groupedData.length === 0 && (
-            <div className="p-20 text-center border-2 border-dashed border-zinc-800 rounded-lg bg-zinc-900/20 shadow-inner">
+            <div className="p-8 md:p-20 text-center border-2 border-dashed border-zinc-800 rounded-lg bg-zinc-900/20 shadow-inner">
               <Layers size={48} strokeWidth={1} className="mx-auto text-zinc-700 mb-4" />
               <p className="text-zinc-500 uppercase tracking-widest text-sm mb-6 font-light underline-offset-8 decoration-1 decoration-zinc-800">Database is currently empty</p>
-              <div className="flex justify-center gap-4">
-                <button 
-                  onClick={handleLoadDefault}
-                  className="px-6 py-3 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-all cursor-pointer text-xs uppercase tracking-widest font-bold shadow-lg font-sans flex items-center gap-2"
+              <div className="flex flex-col md:flex-row justify-center gap-4">
+                <ActionButton 
+                  onClick={handleLoadDefault} 
+                  icon={Globe} 
+                  label="Load Default" 
+                  description="Fetch the official cameras.csv from GitHub."
+                />
+                
+                <ActionButton 
+                  component="label"
+                  icon={Upload} 
+                  label="Upload CSV" 
+                  description="Edit a local CSV file from your computer."
                 >
-                  <Globe size={14} /> Load Default
-                </button>
-                <label className="px-6 py-3 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-all cursor-pointer text-xs uppercase tracking-widest font-bold shadow-lg font-sans">
-                  Upload CSV
                   <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-                </label>
-                <button onClick={addBrand} className="px-6 py-3 bg-atlas-gold hover:bg-atlas-gold/90 text-zinc-950 rounded transition-all text-xs font-bold uppercase tracking-widest shadow-lg font-sans">
-                  Create New Entry
-                </button>
+                </ActionButton>
               </div>
             </div>
           )}
