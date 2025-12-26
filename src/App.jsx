@@ -17,7 +17,8 @@ import {
   Circle,
   Zap,
   SortAsc,
-  GripVertical
+  GripVertical,
+  Globe
 } from 'lucide-react';
 
 // DND Kit Imports
@@ -295,6 +296,31 @@ export default function App() {
     });
   };
 
+  const handleLoadDefault = async () => {
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/HumanMint/atlas-vision/main/public/data/cameras.csv');
+      if (!response.ok) throw new Error('Failed to fetch default database.');
+      const csvText = await response.text();
+      
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.errors.length > 0) {
+            setError(`Error parsing default CSV: ${results.errors[0].message}`);
+          } else {
+            setGroupedData(groupData(results.data));
+            setFileName('cameras.csv');
+            setHasUnsavedChanges(false);
+            setError(null);
+          }
+        }
+      });
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const toggleBrand = (brand) => {
     setExpandedBrands(prev => ({ ...prev, [brand]: !prev[brand] }));
   };
@@ -454,6 +480,14 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
+          <button 
+            onClick={handleLoadDefault}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-colors cursor-pointer text-sm uppercase tracking-widest font-bold shadow-lg"
+          >
+            <Globe size={16} />
+            <span>Load Default</span>
+          </button>
+
           <label className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded hover:border-zinc-600 transition-colors cursor-pointer text-sm uppercase tracking-widest font-bold shadow-lg">
             <Upload size={16} />
             <span>Load Database</span>
@@ -641,6 +675,12 @@ export default function App() {
               <Layers size={48} strokeWidth={1} className="mx-auto text-zinc-700 mb-4" />
               <p className="text-zinc-500 uppercase tracking-widest text-sm mb-6 font-light underline-offset-8 decoration-1 decoration-zinc-800">Database is currently empty</p>
               <div className="flex justify-center gap-4">
+                <button 
+                  onClick={handleLoadDefault}
+                  className="px-6 py-3 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-all cursor-pointer text-xs uppercase tracking-widest font-bold shadow-lg font-sans flex items-center gap-2"
+                >
+                  <Globe size={14} /> Load Default
+                </button>
                 <label className="px-6 py-3 bg-zinc-900 border border-zinc-800 rounded hover:border-atlas-gold/50 hover:text-atlas-gold transition-all cursor-pointer text-xs uppercase tracking-widest font-bold shadow-lg font-sans">
                   Upload CSV
                   <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
